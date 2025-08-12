@@ -53,10 +53,10 @@ class HPPCheckoutState extends State<HPPCheckout> {
           },
           onNavigationRequest: (NavigationRequest request) {
             debugPrint('allowing navigation to $request');
-            if (request.url.toString().startsWith(widget.returnURL ?? "")) {
-              Navigator.pop(context, Uri.parse(request.url).queryParameters);
-              return NavigationDecision.prevent;
-            }
+            // if (request.url.toString().startsWith(widget.returnURL ?? "")) {
+            //   Navigator.pop(context, Uri.parse(request.url).queryParameters);
+            //   return NavigationDecision.prevent;
+            // }
             return NavigationDecision.navigate;
           },
         ),
