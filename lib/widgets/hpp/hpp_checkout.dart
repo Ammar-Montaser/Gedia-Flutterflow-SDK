@@ -57,7 +57,7 @@ class HPPCheckoutState extends State<HPPCheckout> {
             //   Navigator.pop(context, Uri.parse(request.url).queryParameters);
             //   return NavigationDecision.prevent;
             // }
-            return NavigationDecision.navigate;
+            // return NavigationDecision.navigate;
           },
         ),
       )
