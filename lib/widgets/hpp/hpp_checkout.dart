@@ -3,22 +3,22 @@ import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class HPPCheckout extends StatefulWidget {
-  const HPPCheckout(
-      {Key? key,
-      required this.hppURL,
-      required this.sessionId,
-      required this.returnURL})
-      : super(key: key);
+  const HPPCheckout({
+    Key? key,
+    required this.hppURL,
+    required this.sessionId,
+    required this.returnURL,
+  }) : super(key: key);
 
   final String hppURL;
   final String sessionId;
   final String? returnURL;
 
   @override
-  State<HPPCheckout> createState() => HPPCheckoutState();
+  State<HPPCheckout> createState() => _HPPCheckoutState();
 }
 
-class HPPCheckoutState extends State<HPPCheckout> {
+class _HPPCheckoutState extends State<HPPCheckout> {
   late final WebViewController _controller;
   bool _isLoading = true;
 
@@ -29,21 +29,28 @@ class HPPCheckoutState extends State<HPPCheckout> {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))
-      ..addJavaScriptChannel('Toaster', onMessageReceived: (message) {
-        // ignore: deprecated_member_use
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message.message)),
-        );
-      })
+      ..addJavaScriptChannel(
+        'Toaster',
+        onMessageReceived: (message) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message.message)),
+          );
+        },
+      )
       ..setNavigationDelegate(
         NavigationDelegate(
-          onProgress: (int progress) {},
+          onProgress: (int progress) {
+            debugPrint("WebView progress: $progress%");
+          },
           onPageStarted: (String url) {
+            debugPrint("Page started: $url");
             setState(() {
               _isLoading = true;
             });
           },
           onPageFinished: (String url) {
+            debugPrint("Page finished: $url");
             setState(() {
               _isLoading = false;
             });
@@ -52,23 +59,35 @@ class HPPCheckoutState extends State<HPPCheckout> {
             debugPrint('WebResourceError: $error');
           },
           onNavigationRequest: (NavigationRequest request) {
-            debugPrint('allowing navigation to $request');
-            // if (request.url.toString().startsWith(widget.returnURL ?? "")) {
-            //   Navigator.pop(context, Uri.parse(request.url).queryParameters);
-            //   return NavigationDecision.prevent;
-            // }
-            // return NavigationDecision.navigate;
+            debugPrint('Navigation request to: ${request.url}');
+
+            // If return URL is reached → close WebView & return result
+            if ((widget.returnURL ?? "").isNotEmpty &&
+                request.url.startsWith(widget.returnURL!)) {
+              Navigator.pop(
+                context,
+                Uri.parse(request.url).queryParameters,
+              );
+              return NavigationDecision.prevent;
+            }
+
+            return NavigationDecision.navigate; // Allow normal navigation
           },
         ),
       )
-      ..loadRequest(Uri.parse("${widget.hppURL}${widget.sessionId}"));
+      ..loadRequest(
+        Uri.parse("${widget.hppURL}${widget.sessionId}"),
+      );
   }
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: Theme.of(context).appBarTheme.backgroundColor,
-    ));
+    // Match status bar color to app theme
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Theme.of(context).appBarTheme.backgroundColor,
+      ),
+    );
 
     return Scaffold(
       appBar: PreferredSize(
@@ -84,7 +103,7 @@ class HPPCheckoutState extends State<HPPCheckout> {
               child: const Center(
                 child: CircularProgressIndicator(),
               ),
-            )
+            ),
         ],
       ),
     );
